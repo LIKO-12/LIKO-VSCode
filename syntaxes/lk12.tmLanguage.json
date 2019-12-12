@@ -1,0 +1,107 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Liko-12",
+	"patterns": [
+		{
+			"include": "#luacode"
+		},
+		{
+			"include": "#tilemap"
+		},
+		{
+			"include": "#spritesheet"
+		},
+		{
+			"include": "#sfx"
+		},
+		{
+			"include": "#note"
+		}
+	],
+	"repository": {
+		"luacode": {
+			"name": "meta.section.lk12.luacode",
+			"begin": "___luacode___",
+			"end": "___",
+			"patterns": [
+				{
+					"include": "source.lua"
+				},
+				{
+					"include": "#section"
+				}
+			]
+		},
+		"tilemap" : {
+			"name": "meta.section.lk12.tilemap",
+			"begin": "tilemap___",
+			"end": "___",
+			"patterns": [
+				{
+					"include": "#header"
+				},
+				{
+					"include": "#element"
+				},
+				{
+					"include": "#section"
+				}
+
+			]
+		},
+		"spritesheet": {
+			"name": "meta.section.lk12.spritesheet",
+			"begin": "spritesheet___",
+			"end": "___",
+			"patterns": [
+				{
+					"include": "#header"
+				},
+				{
+					"include": "#hexadecimal"
+				},
+				{
+					"include": "#section"
+				}
+			]
+		},
+		"sfx": {
+			"name": "meta.section.lk12.sfx",
+			"match": "sfx___",
+			"patterns": [
+				{
+					"include": "#section"
+				}
+			]
+		},
+		"header": {
+			"name": "entity.name.section.lk12",
+			"match": "LK12;([A-Z]+);([0-9]+)x([0-9]+)",
+			"captures": {
+				"2": {
+					"name": "constant.numbers.integer.lk12"
+				},
+				"3": {
+					"name": "constant.numbers.lk12"
+				}
+			}
+		},
+		"element": {
+			"name": "constant.numbers.integer.lk12",
+			"match": "[0-9]+"
+		},
+		"hexadecimal": {
+			"name": "constant.numeric.hexadecimal.lk12",
+			"match": "[0-9A-F]"
+		},
+		"note": {
+			"name": "constant.other.sfx.lk12",
+			"match": "[A-G] [0-9]+"
+		},
+		"section": {
+			"name": "entity.name.section.lk12",
+			"match": "[a-z]+___"
+		}
+	},
+	"scopeName": "source.lk12"
+}

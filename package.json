@@ -1,0 +1,34 @@
+{
+    "name": "liko-12-lang",
+    "displayName": "Liko-12 Lang",
+    "description": "Syntax highlighting for Liko-12 games",
+    "version": "1.0.0",
+    "engines": {
+        "vscode": "^1.40.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "lk12",
+                "aliases": [
+                    "Liko-12",
+                    "lk12"
+                ],
+                "extensions": [
+                    ".lk12"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "lk12",
+                "scopeName": "source.lk12",
+                "path": "./syntaxes/lk12.tmLanguage.json"
+            }
+        ]
+    }
+}
