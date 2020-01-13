@@ -1,96 +1,101 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const vscode = require("vscode");
+const docs = require("./docs.json");
+var Names;
+(function (Names) {
+    Names["Audio"] = "Audio";
+    Names["BIOS"] = "BIOS";
+    Names["CPU"] = "CPU";
+    Names["FDD"] = "FDD";
+    Names["GPU"] = "GPU";
+    Names["Gamepad"] = "Gamepad";
+    Names["HDD"] = "HDD";
+    Names["Keyboard"] = "Keyboard";
+    Names["TouchControls"] = "TouchControls";
+    Names["RAM"] = "RAM";
+    Names["WEB"] = "WEB";
+})(Names || (Names = {}));
+var methods = {};
+for (var name in Names) {
+    var sub = docs.Peripherals[name].methods;
+    methods = Object.assign(Object.assign({}, methods), sub);
+}
 function activate(context) {
     context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider({ language: "lk12" }, new LK12DocumentSymbolProvider()));
     context.subscriptions.push(vscode.languages.registerFoldingRangeProvider({ language: "lk12" }, new LK12FoldingProvider()));
+    context.subscriptions.push(vscode.languages.registerHoverProvider({ language: "lk12" }, new LK12HoverProvider()));
 }
 exports.activate = activate;
-var colorRE = /[0-9A-Fa-f]/;
-let colors = [
-    new vscode.Color(0, 0, 0, 255),
-    new vscode.Color(28, 43, 83, 255),
-    new vscode.Color(127, 36, 84, 255),
-    new vscode.Color(0, 135, 81, 255),
-    new vscode.Color(171, 82, 54, 255),
-    new vscode.Color(96, 88, 79, 255),
-    new vscode.Color(195, 195, 198, 255),
-    new vscode.Color(255, 241, 233, 255),
-    new vscode.Color(237, 27, 81, 255),
-    new vscode.Color(250, 162, 27, 255),
-    new vscode.Color(247, 236, 47, 255),
-    new vscode.Color(93, 187, 77, 255),
-    new vscode.Color(81, 166, 220, 255),
-    new vscode.Color(131, 118, 156, 255),
-    new vscode.Color(241, 118, 166, 255),
-    new vscode.Color(252, 204, 171, 255)
-];
-function getIndex(char) {
-    switch (char) {
-        case "0":
-            return 0;
-        case "1":
-            return 1;
-        case "2":
-            return 2;
-        case "3":
-            return 3;
-        case "4":
-            return 4;
-        case "5":
-            return 5;
-        case "6":
-            return 6;
-        case "7":
-            return 7;
-        case "8":
-            return 8;
-        case "9":
-            return 9;
-        case "A":
-            return 10;
-        case "B":
-            return 11;
-        case "C":
-            return 12;
-        case "D":
-            return 13;
-        case "E":
-            return 14;
-        case "F":
-            return 15;
-        default:
-            return 0;
-    }
-}
-class LK12ColorProvider {
-    provideDocumentColors(document, token) {
+class LK12HoverProvider {
+    provideHover(document, position, token) {
         return new Promise((resolve, reject) => {
-            var info = [];
-            var text = document.getText.toString();
-            var header = "___spritesheet___\nLK12;GPUIMG;192x128;\n";
-            var start = text.indexOf(header);
-            if (start != -1) {
-                var pos = start + header.length + 2;
-                while (colorRE.test(text.charAt(pos))) {
-                    info.push({
-                        range: new vscode.Range(document.positionAt(pos), document.positionAt(pos + 1)),
-                        color: colors[getIndex(text.charAt(pos))]
-                    });
+            const rng = document.getWordRangeAtPosition(position);
+            const word = document.getText(rng);
+            if (methods[word]) {
+                var method = methods[word];
+                var markdown = new vscode.MarkdownString().appendMarkdown("### " + word + "\n").appendText(method.shortDescription);
+                var code = "";
+                var flag = false;
+                if (method["usages"]) {
+                    if (method.usages[0]["returns"]) {
+                        var returns = method.usages[0].returns;
+                        for (var ret of returns) {
+                            if (flag) {
+                                code += ", ";
+                            }
+                            code += ret.name;
+                            flag = true;
+                        }
+                        code += " = ";
+                    }
+                    code += word + "(";
+                    flag = false;
+                    if (method.usages[0]["arguments"]) {
+                        var args = method.usages[0].arguments;
+                        for (var arg of args) {
+                            if (flag) {
+                                code += ", ";
+                            }
+                            code += arg.name;
+                            flag = true;
+                        }
+                    }
+                    code += ")";
                 }
-                pos++;
+                else {
+                    if (method["returns"]) {
+                        for (var ret of method.returns) {
+                            if (flag) {
+                                code += ", ";
+                            }
+                            code += ret.name;
+                            flag = true;
+                        }
+                        code += " = ";
+                    }
+                    code += word + "(";
+                    flag = false;
+                    if (method["arguments"]) {
+                        for (var arg of method.arguments) {
+                            if (flag) {
+                                code += ", ";
+                            }
+                            code += arg.name;
+                            flag = true;
+                        }
+                    }
+                    code += ")";
+                }
+                markdown.appendCodeblock(code, "lua");
+                resolve({
+                    contents: [markdown],
+                    range: rng
+                });
             }
-            resolve(info);
-        });
-    }
-    provideColorPresentations(color, context, token) {
-        return new Promise((resolve, reject) => {
-            var presentations = [];
-            let label = colors.indexOf(color);
-            if (label == -1) {
-                label = 0;
+            else {
+                resolve(null);
             }
-            resolve([new vscode.ColorPresentation(label.toString())]);
         });
     }
 }
