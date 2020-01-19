@@ -20,14 +20,15 @@ This extension syntax hightlights the LIKO-12 format by splitting it into four s
 - Folding: Each of the four sections is able to be folded.
 - Outline: Each of the also appears in the outline.
 - Hover: For functions from LIKO-12 libraries, there are explanations when hovered.
+- Linting: If luacheck is installed it could lint the lua code section on save.
 
 ## Requirements
 
-Currently there are no external dependancies.
+If you want linting available, you need it to be installed and in the path.
 
 ## Extension Settings
 
-There are no settings yet, but if you have ideas please suggest them.
+liko12.luacheck - the path to luacheck or null to disable.
 
 ## Known Issues
 

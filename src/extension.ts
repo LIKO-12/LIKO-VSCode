@@ -1,6 +1,12 @@
 import * as vscode from 'vscode';
 import * as docs from './docs.json';
-import { resolve } from 'dns';
+import * as cp from 'child_process';
+import * as fs from 'fs';
+import {tmpdir} from 'os';
+import {join} from 'path';
+
+var tempPath: string;
+var luacheck: string | undefined;
 
 interface Method {
     availableSince: number[][],
@@ -53,6 +59,23 @@ for (var name in Names ) {
     methods = {...methods, ...sub};
 }
 
+var globals = [...Object.keys(methods), ...["Controls", "Library", "LoadData", "MapObj", "SFX", "SaveData", "SaveID",
+    "SfxObj", "Sprite", "SpriteGroup", "__BTNGamepad", "__BTNKeypressed", "__BTNTouchControl", "__BTNUpdate",
+    "btn", "btnp", "dofile", "exit", "fget", "fset", "getBtnName", "input", "isInRect", "map", "mget", "mset",
+    "pause", "pget", "pset", "sget", "sset", "whereInGrid"]];
+
+var global = "";
+var flag = false;
+for (var glob in globals) {
+    if (flag) {
+        global += ", "
+    }
+    flag = true;
+    global += "\"" + globals[glob] + "\"";
+}
+
+var collection: vscode.DiagnosticCollection = vscode.languages.createDiagnosticCollection("liko12");
+
 export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(
         {language: "lk12"}, new LK12DocumentSymbolProvider()
@@ -62,7 +85,57 @@ export function activate(context: vscode.ExtensionContext) {
     ));
     context.subscriptions.push(vscode.languages.registerHoverProvider(
         {language: "lk12"}, new LK12HoverProvider()
-    ))
+    ));
+    luacheck = vscode.workspace.getConfiguration("liko12").get("luacheck");
+    if (luacheck) {
+        tempPath = fs.mkdtempSync(join(tmpdir(), "luacheck"));
+        context.subscriptions.push(collection);
+        context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(document => {
+            if (document && document.languageId === "lk12") {
+                check(document);
+            } else {
+                collection.clear();
+            }
+        }))
+    }
+}
+
+function check(document: vscode.TextDocument): void {
+    var diags: vscode.Diagnostic[] = [];
+    var text = document.getText();
+    var start = text.indexOf("___luacode___") + 14;
+    var offset = document.positionAt(start).line - 1;
+    var code = text.substring(start, text.indexOf("___", start));
+    var path = tempPath + "/code.lua";
+    var configPath = tempPath + "/.luacheckrc";
+    fs.writeFileSync(configPath, `
+        codes = true
+        self = false
+        std = "luajit+love"
+        globals = {
+            ${global}
+        }
+    `);
+    fs.writeFileSync(path, code);
+    console.log(luacheck + " --ranges --config " + configPath + " " + path);
+    var proc = cp.exec(luacheck + " --ranges --config " + configPath + " " + path, (err, stdout, stderr) => {
+        if (err) {
+            var lines = stdout.split("\n").slice(2, -3);
+            var line: string;
+            for (var index in lines) {
+                line = lines[index].replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+                var fields = line.split(":", 4);
+                var cols = fields[2].split("-");
+                var startPos = new vscode.Position(offset + parseInt(fields[1]), parseInt(cols[0]));
+                var endPos = new vscode.Position(offset + parseInt(fields[1]), parseInt(cols[1]));
+                diags.push(new vscode.Diagnostic(new vscode.Range(startPos, endPos), fields[3]));
+            }
+            console.log(diags);
+            collection.set(document.uri, diags);
+        } else {
+            collection.clear();
+        }
+    });
 }
 
 class LK12HoverProvider implements vscode.HoverProvider {

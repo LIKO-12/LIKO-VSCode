@@ -14,6 +14,16 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
+        "configuration": {
+            "title": "liko12",
+            "properties": {
+                "liko12.luacheck": {
+                    "type": ["string", "null"],
+                    "default": "luacheck",
+                    "description": "Path to luacheck eecutable or null to disable"
+                }
+            }
+        },
         "languages": [
             {
                 "id": "lk12",
